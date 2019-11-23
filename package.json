@@ -1,0 +1,35 @@
+{
+  "name": "fiber",
+  "version": "1.0.0",
+  "description": "How to writing a simple fiber ？",
+  "main": "dist/fiber.js",
+  "keywords": [
+    "fiber"
+  ],
+  "directories": {
+    "doc": "doc",
+    "example": "examples",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "rollup -c",
+    "link": "npm link"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LinkXSystem/learn-fiber.git"
+  },
+  "author": "zhi",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/LinkXSystem/learn-fiber/issues"
+  },
+  "homepage": "https://github.com/LinkXSystem/learn-fiber#readme",
+  "devDependencies": {
+    "rollup": "^1.27.0",
+    "rollup-plugin-typescript": "^1.0.1",
+    "tslib": "^1.10.0",
+    "typescript": "^3.7.2"
+  }
+}
