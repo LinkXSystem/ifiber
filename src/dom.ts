@@ -10,7 +10,7 @@ export function updateElement(
     let nValue = nextProps[name];
 
     // 属性值未变化
-    if (oValue === nValue) continue;
+    if (oValue === nValue || name === 'children') continue;
 
     // 样式
     if (name === 'style') {
@@ -57,7 +57,7 @@ export function createElement(vnode: VNode) {
       element = document.createTextNode('');
       break;
     default:
-      document.createElement(type as keyof HTMLElementTagNameMap);
+      element = document.createElement(type as keyof HTMLElementTagNameMap);
   }
 
   updateElement(element, {}, vnode.props);

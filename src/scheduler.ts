@@ -6,7 +6,7 @@ let TimeSlice = 2000;
 
 let CurrentCallback;
 let CurrentTask;
-let FrameLength = 0;
+let FrameLength = 10;
 let FrameDeadline = 0;
 
 let scheduling = false;
@@ -64,6 +64,7 @@ function workLoop(initialTime) {
 
       if (next) {
         CurrentTask.callback = next;
+      } else {
         UpdatePopStatus = false;
       }
     }
@@ -79,7 +80,7 @@ function workLoop(initialTime) {
   return !!CurrentTask;
 }
 
-function preformWork() {
+function performWork() {
   if (CurrentCallback) {
     let CurrentTime = getTime();
 
@@ -92,7 +93,7 @@ function preformWork() {
     }
 
     CurrentCallback = null;
-    FrameLength = 5;
+    FrameLength = 10;
     scheduling = false;
   }
 }
@@ -101,12 +102,12 @@ const planWork = (() => {
   if (typeof MessageChannel !== 'undefined') {
     const channel = new MessageChannel();
     const port = channel.port2;
-    channel.port1.onmessage = preformWork;
+    channel.port1.onmessage = performWork;
 
     return () => port.postMessage(null);
   }
 
-  return () => setTimeout(preformWork, 0);
+  return () => setTimeout(performWork, 0);
 })();
 
 const getTime = function() {

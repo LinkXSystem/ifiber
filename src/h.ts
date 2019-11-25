@@ -1,4 +1,4 @@
-export default function h(element, attrs) {
+export default function h(type, attrs) {
   let props = attrs || {};
   let key = props.key || null;
   let ref = props.ref || null;
@@ -14,7 +14,7 @@ export default function h(element, attrs) {
 
     if (typeof vnode === 'string' || typeof vnode === 'number') {
       children.push({
-        text: 'text',
+        type: 'text',
         props: {
           nodeValue: vnode
         }
@@ -35,5 +35,5 @@ export default function h(element, attrs) {
   delete props.key;
   delete props.ref;
 
-  return { element, props, key, ref };
+  return { type, props, key, ref };
 }

@@ -22,7 +22,7 @@ export default class Heapify {
   }
 
   static peek(heap) {
-    return heap[0];
+    return heap[0] || null;
   }
 
   static pop(heap) {

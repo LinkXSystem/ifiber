@@ -1,10 +1,16 @@
-import { ROOT, DELETE, HOOK, UPDATE, HOST } from './constants';
+import { ROOT, DELETE, HOOK, UPDATE, HOST, PLACE } from './constants';
 import { shouleYeild, scheduleCallback } from './scheduler';
-import { isFunc } from './utils';
-import { updateElement } from './dom';
+import { isFunc, isArray } from './utils';
+import { updateElement, createElement } from './dom';
+import { resetCursor } from './hooks';
 
+let CurrentHook;
 let WIP;
 let PreCommit;
+
+export function getHook() {
+  return CurrentHook || {};
+}
 
 /**
  *
@@ -24,11 +30,18 @@ export function render(vnode, node, done) {
 }
 
 export function scheduleWork(fiber, lock: boolean = false) {
+  fiber.lock = lock;
   WIP = fiber;
   scheduleCallback(performWork);
 }
 
 function performWork(didout) {
+  console.warn(
+    'Yeild Status: ',
+    WIP,
+    WIP && (!shouleYeild() || didout),
+    !shouleYeild()
+  );
   while (WIP && (!shouleYeild() || didout)) {
     WIP = performWIP(WIP);
   }
@@ -37,6 +50,12 @@ function performWork(didout) {
     commitWork(PreCommit);
     return null;
   }
+
+  if (!didout) {
+    return performWork.bind(null);
+  }
+
+  return null;
 }
 
 function getParentNode(fiber) {
@@ -45,27 +64,70 @@ function getParentNode(fiber) {
   }
 }
 
-function updateHOOK(WIP) {}
-function updateHOST(WIP) {}
+function updateHOOK(WIP) {
+  WIP.props = WIP.props || {};
+  WIP.state = WIP.state || {};
+
+  WIP.effect = {};
+
+  WIP.memo = WIP.memo || {};
+  WIP.__deps = WIP.__deps || { m: {}, e: {} };
+
+  CurrentHook = WIP;
+  resetCursor();
+  reconcileChildren(WIP, WIP.type(WIP.props));
+}
+
+function updateHOST(WIP) {
+  if (!WIP.node) {
+    WIP.node = createElement(WIP);
+  }
+
+  let parent = WIP.parentNode || {};
+
+  WIP.insertPoint = parent.last || null;
+  parent.last = WIP;
+  WIP.node.last = null;
+
+  reconcileChildren(WIP, WIP.props.children);
+}
 
 function performWIP(WIP) {
   WIP.patches = WIP.patches || [];
   WIP.parentNode = getParentNode(WIP);
-  WIP.tag = HOOK ? updateHOOK(WIP) : updateHOST(WIP);
+  WIP.tag === HOOK ? updateHOOK(WIP) : updateHOST(WIP);
 
   if (WIP.child) return WIP.child;
 
   while (WIP) {
     completeWork(WIP);
-    if (WIP.sibing && WIP.lock == null) {
-      return WIP.sibing;
+    if (WIP.sibling && WIP.lock == null) {
+      return WIP.sibling;
     }
     WIP = WIP.parent;
   }
 }
 
 function hashfy(arr) {
-  return [];
+  let out = {};
+  let i = 0;
+  let j = 0;
+  let temp_ = isArray(arr);
+
+  temp_.forEach(item => {
+    if (item.pop) {
+      item.forEach(item => {
+        item.key
+          ? (out[`.${i}.${item.key}`] = item)
+          : (out[`.${i}.${j}`] = item) && j++;
+      });
+      i++;
+    } else {
+      item.key ? (out['.' + item.key] = item) : (out['.' + i] = item) && i++;
+    }
+  });
+
+  return out;
 }
 
 function createFiber(vnode, tag) {
@@ -106,12 +168,33 @@ function reconcileChildren(WIP, children) {
       newFiber.patchTag = UPDATE;
       newFiber = { ...alternate, ...newFiber };
       newFiber.alternate = alternate;
+      if (shoulePlace(newFiber)) {
+        newFiber.patchTag = PLACE;
+      }
+    } else {
+      newFiber = createFiber(newFiber, PLACE);
     }
+
+    newFibers[key] = newFiber;
+    newFiber.parent = WIP;
+
+    if (prevFiber) {
+      prevFiber.sibling = newFiber;
+    } else {
+      WIP.child = newFiber;
+    }
+
+    prevFiber = newFiber;
   }
+
+  if (prevFiber) prevFiber.sibling = null;
+  WIP.lock = WIP.lock ? false : null;
 }
 
 function shoulePlace(fiber) {
   let { parent } = fiber;
+  if (parent.tag === HOOK) return parent.key && !parent.lock;
+  return fiber.key;
 }
 
 function completeWork(fiber) {
@@ -156,6 +239,8 @@ function commit(fiber) {
   let dom = fiber.node;
   let ref = fiber.ref;
 
+  console.warn(dom);
+
   switch (tag) {
     case DELETE: {
       clearup(fiber);
@@ -177,11 +262,12 @@ function commit(fiber) {
     }
     default: {
       let point = fiber.insertPoint ? fiber.insertPoint.node : null;
-      let after = point ? point.nextSibing : parent.firstChild;
+      let after = point ? point.nextSibling : parent.firstChild;
 
       if (after === dom) return;
       if (after === null && dom === parent.lastChild) return;
-      parent.insertBefore(dom, after);
+      // TODO: dom 存在 underfine 的情况，需要解决
+      dom && parent.insertBefore(dom, after);
     }
   }
 
