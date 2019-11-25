@@ -31,7 +31,7 @@ export default function h(type, attrs) {
       children
     });
   }
-
+  
   delete props.key;
   delete props.ref;
 
